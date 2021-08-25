@@ -8,7 +8,6 @@ app.config["DEBUG"] = True
 app.static_folder = 'static'
 
 @app.route('/',methods = ['GET'])
-
 def home():
     #Site ilk açıldığında buradan başlayacağı için önce key ve preferences dosyası oluşturuldu. Daha önce oluşturulduysa tekrar oluşturulmasına gerek yok
     if Path("sharedPreferences.bin").exists()==False:
@@ -29,7 +28,6 @@ def admin_login():
     isFirstOpening = bool(Crypto.getSharedPreferencesData)
 
     if(isFirstOpening==True and Path("sharedPreferences.bin").exists()==True and id =='admin' and password =='admin'):
-        
         return render_template('admin_enterance/admin_login.html')
     
     return "<center><h1>FORM</h1><p>Burası form kısmı</p></center>"
@@ -37,6 +35,11 @@ def admin_login():
 
 @app.route('/change_credentials', methods = ['POST'])
 def change_credentials():
+    #Burada isFirstOpening false yapılacak
+    new_password = request.form['login_email']
+    new_id = request.form['login_id']
+    new_password = request.form['login_password']
+
     return "<center><h1>Credentials Changed</h1></center>"
 
 @app.errorhandler(404)
