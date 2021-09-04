@@ -5,13 +5,38 @@ import Models.crypto as Crypto
 from pathlib import Path
 from databaseOperations import addUser, getUser, deleteUser, updateUser
 import distutils.util as dsUtil
+import jwt
+import datetime
+from functools import wraps
 #from Models.usermodel import db
 
 app  = flask.Flask(__name__)
 app.config["DEBUG"] = True
 app.config['SECRET_KEY'] = 'iTN4wwiLTOwg_yyGCTEEyLKie9L1uwJviJP7avMDFSE'
-#app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite///User2.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.static_folder = 'static'
+
+def token_required(f):
+   @wraps(f)
+   def decorator(*args, **kwargs):
+        token = None
+    
+        if 'x-access-tokens' in request.headers:
+            token = request.headers['x-access-tokens']
+
+        if not token:
+            return jsonify({'message': 'a valid token is missing'})
+
+        try:
+            data = jwt.decode(token, app.config[SECRET_KEY])
+            current_user = getUser(data['email'],data['password'])
+        except:
+            return jsonify({'message': 'token is invalid'})
+         
+    
+        return f(current_user, *args, **kwargs)
+   return decorator
+
 
 
 @app.route('/',methods = ['GET'])
@@ -38,15 +63,13 @@ def admin_login():
         return render_template('admin_enterance/admin_login.html')
 
     user = getUser(id, password)
-    print(type(addUser('osman-guler@outlook.com','Kumarbaz19.',False,'admin')))
+    ##addUser('osman-guler@outlook.com','Kumarbaz19.',False,'admin')
 
-    if(user is not None and ("".join(user[3])).lower()=='admin'.lower()):
+    if(user != 'None' and ("".join(user[3])).lower()=='admin'.lower()): #user[3] is role field
         return "<center><h1>Admin Girişi Başarılı</h1></center>"
 
-    if(user is not None):
-        return render_template('admin_enterance/deneme.html',value = user[0], value2 = user[3])
-    else: return "<center><h1>404</h1><p>The resource could not be found.</p></center>", 404    
-        
+    else: return "<center><h1>404</h1><p>The resource could not be found.</p></center>", 404   
+  
 
 
 @app.route('/change_credentials', methods = ['POST'])
@@ -59,11 +82,16 @@ def change_credentials():
     #Crypto.editSharedPreferencesData('isFirstOpen','False')
     list = getUser(new_email,new_password)
     data = Crypto.getSharedPreferencesAllData()
-    return render_template('admin_enterance/deneme.html',value = data, value2 = list[1] ) 
+    return render_template('admin_enterance/deneme.html',value = data, value2 = list[1]) 
 
 @app.errorhandler(404)
 def page_not_found(e):
     return "<center><h1>404</h1><p>The resource could not be found.</p></center>", 404
 
-app.run()
 
+
+
+app.run(ssl_context=('cert.pem', 'key.pem'), port=443)
+
+'''
+'''
