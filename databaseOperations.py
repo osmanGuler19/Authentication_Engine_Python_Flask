@@ -81,7 +81,6 @@ def getUser(add_email,add_password):
             decryptedPassword = fernet.decrypt(resultToBinary)
             decryptedPasswordToString = decryptedPassword.decode('UTF-8')
             if (decryptedPasswordToString == add_password) :
-                user[1] = decryptedPasswordToString
                 return user
             else:
                 return 'None'
@@ -100,3 +99,12 @@ def addUser(add_email, add_password,add_authenticated,add_role):
         conn = engine.connect()
         conn.execute(ins)
     
+def checkPassword(hashedPassword, normalPassword):
+    fernet = Fernet(getKey())
+    passwordToBinary = hashedPassword.encode('UTF-8')
+    decryptedPassword = fernet.decrypt(passwordToBinary)
+    decryptedPasswordToString = decryptedPassword.decode('UTF-8')
+    if decryptedPasswordToString == normalPassword:
+        return True
+    else:
+        return False

@@ -1,9 +1,9 @@
 import flask
 from flask_sqlalchemy import SQLAlchemy
-from flask import render_template, request, jsonify
+from flask import render_template, request, jsonify, make_response
 import Models.crypto as Crypto
 from pathlib import Path
-from databaseOperations import addUser, getUser, deleteUser, updateUser
+from databaseOperations import addUser, getUser, deleteUser, updateUser,checkPassword
 import distutils.util as dsUtil
 import jwt
 import datetime
@@ -28,7 +28,7 @@ def token_required(f):
             return jsonify({'message': 'a valid token is missing'})
 
         try:
-            data = jwt.decode(token, app.config[SECRET_KEY])
+            data = jwt.decode(token, app.config['SECRET_KEY'])
             current_user = getUser(data['email'],data['password'])
         except:
             return jsonify({'message': 'token is invalid'})
@@ -36,6 +36,58 @@ def token_required(f):
     
         return f(current_user, *args, **kwargs)
    return decorator
+
+
+@app.route('/login', methods=['GET', 'POST'])  
+@token_required
+def login_user(): 
+ 
+    auth = request.authorization   
+
+    if not auth or not auth.username or not auth.password:  
+        return make_response('could not verify', 401, {'WWW.Authentication': 'Basic realm: "login required"'})    
+
+  
+    user = getUser(auth.email, auth.password)
+     
+    if checkPassword(user[1], auth.password):
+        updateUser(user[0],user[1],True,user[3],user[4],True)
+        token = jwt.encode({'email': user[0], 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])  
+        return jsonify({'token' : token.decode('UTF-8')}) 
+
+    return make_response('could not verify',  401, {'WWW.Authentication': 'Basic realm: "login required"'})
+
+@app.route('/logout', methods=['GET', 'POST'])
+@token_required
+def logout_user(): 
+    auth = request.authorization   
+    if not auth or not auth.username or not auth.password:  
+        return make_response('could not verify', 401, {'WWW.Authentication': 'Basic realm: "login required"'})
+
+    user = getUser(auth.email, auth.password) 
+    if checkPassword(user[1], auth.password):
+        updateUser(user[0],user[1],False,user[3],user[4],False)
+        return jsonify({'message': 'logged out successfully'})
+
+    return make_response('could not verify',  401, {'WWW.Authentication': 'Basic realm: "login required"'})
+
+
+@app.route('/register', methods=['GET', 'POST'])
+@token_required
+def signup_user():  
+    data = request.get_json()  
+    addUser(data['email'],data['password'],False,'user')
+    return jsonify({'message': 'registered successfully'})
+
+
+@app.route('/deleteUser', methods=['GET', 'POST'])
+@token_required
+def delete_user():  
+    data = request.get_json()  
+    user = getUser(data['email'],data['password'])
+    updateUser(user[0],user[1],False,'user',True,False)
+    return jsonify({'message': 'deleted successfully'})
+
 
 
 
@@ -84,6 +136,7 @@ def change_credentials():
     data = Crypto.getSharedPreferencesAllData()
     return render_template('admin_enterance/deneme.html',value = data, value2 = list[1]) 
 
+
 @app.errorhandler(404)
 def page_not_found(e):
     return "<center><h1>404</h1><p>The resource could not be found.</p></center>", 404
@@ -93,5 +146,3 @@ def page_not_found(e):
 
 app.run(ssl_context=('cert.pem', 'key.pem'), port=443)
 
-'''
-'''
