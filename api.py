@@ -33,13 +33,11 @@ def token_required(f):
         except:
             return jsonify({'message': 'token is invalid'})
          
-    
         return f(current_user, *args, **kwargs)
    return decorator
 
 
-@app.route('/login', methods=['GET', 'POST'])  
-@token_required
+@app.route('/login', methods=['GET', 'POST'])
 def login_user(): 
  
     auth = request.authorization   
@@ -52,7 +50,7 @@ def login_user():
      
     if checkPassword(user[1], auth.password):
         updateUser(user[0],user[1],True,user[3],user[4],True)
-        token = jwt.encode({'email': user[0], 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}, app.config['SECRET_KEY'])  
+        token = jwt.encode({'email': user[0], 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30),' password':user[1]}, app.config['SECRET_KEY'])  
         return jsonify({'token' : token.decode('UTF-8')}) 
 
     return make_response('could not verify',  401, {'WWW.Authentication': 'Basic realm: "login required"'})
@@ -118,7 +116,9 @@ def admin_login():
     ##addUser('osman-guler@outlook.com','Kumarbaz19.',False,'admin')
 
     if(user != 'None' and ("".join(user[3])).lower()=='admin'.lower()): #user[3] is role field
-        return "<center><h1>Admin Girişi Başarılı</h1></center>"
+        token = jwt.decode({'email': user[0], 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30),' password':user[1]}, app.config['SECRET_KEY'])  
+        s = token.encode('UTF-8')
+        return render_template('admin_enterance/admin_logged.html',value= jsonify({'token' : s}))
 
     else: return "<center><h1>404</h1><p>The resource could not be found.</p></center>", 404   
   
@@ -127,14 +127,11 @@ def admin_login():
 @app.route('/change_credentials', methods = ['POST'])
 def change_credentials():
     #Burada isFirstOpening false yapılacak
-    #Crypto.editSharedPreferencesData('isFirstOpen','False')
     new_email= request.form['login_email']
     new_password = request.form['login_password']    
-    #addUser(new_email,new_password,True,'admin')
-    #Crypto.editSharedPreferencesData('isFirstOpen','False')
-    list = getUser(new_email,new_password)
-    data = Crypto.getSharedPreferencesAllData()
-    return render_template('admin_enterance/deneme.html',value = data, value2 = list[1]) 
+    addUser(new_email,new_password,True,'admin')
+    Crypto.editSharedPreferencesData('isFirstOpen','False')
+    
 
 
 @app.errorhandler(404)
