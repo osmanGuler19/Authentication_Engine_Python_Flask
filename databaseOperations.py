@@ -6,7 +6,6 @@ from cryptography.fernet import Fernet
 import keyring
 
 
-
 engine = create_engine('sqlite:///User.db', echo = False)
 meta = MetaData()
 users = Table(
@@ -46,8 +45,9 @@ def deleteUser(add_email, add_password):
     decryptedPassword = fernet.decrypt(resultToBinary)
     decryptedPasswordToString = decryptedPassword.decode('UTF-8')
 
-    if decryptedPasswordToString == add_password and u is not None :
-        stmt = users.update().where(users.c.email == add_email).values(isDeleted= True)
+    if decryptedPasswordToString == add_password:
+        print('Selaaaam')
+        stmt = users.update().where(users.c.email == add_email).values(isDeleted=True)
         engine.connect().execute(stmt)
 
 def updateUser(add_email, add_password,add_authenticated,add_role, add_isDeleted,add_isLoggedIn):
@@ -94,7 +94,7 @@ def addUser(add_email, add_password,add_authenticated,add_role):
     enryptedPassword = fernet.encrypt(passwordToBinary)
     enryptedPasswordToString = enryptedPassword.decode('UTF-8')
     u = getUser(add_email,add_password)
-    if u is None:
+    if u =='None':
         ins = users.insert().values(email = add_email, password = enryptedPasswordToString, authenticated = add_authenticated, role = add_role.lower() )
         conn = engine.connect()
         conn.execute(ins)
@@ -108,3 +108,17 @@ def checkPassword(hashedPassword, normalPassword):
         return True
     else:
         return False
+
+def decryptPassword(password):
+    fernet = Fernet(getKey())
+    resultToBinary = password.encode('UTF-8')
+    decryptedPassword = fernet.decrypt(resultToBinary)
+    decryptedPasswordToString = decryptedPassword.decode('UTF-8')
+    return decryptedPasswordToString
+
+def encryptPassword(password):
+    fernet = Fernet(getKey())
+    passwordToBinary = password.encode('UTF-8')
+    enryptedPassword = fernet.encrypt(passwordToBinary)
+    enryptedPasswordToString = enryptedPassword.decode('UTF-8')
+    return enryptedPasswordToString
