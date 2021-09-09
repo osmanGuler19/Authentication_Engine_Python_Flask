@@ -2,7 +2,7 @@ import flask
 from flask import render_template, request, jsonify, make_response
 import Models.crypto as Crypto
 from pathlib import Path
-from databaseOperations import addUser, getUser, deleteUser, updateUser,checkPassword,getKey,decryptPassword,encryptPassword
+from databaseOperations import addUser, getUser, deleteUser, updateUser,checkPassword,getKey,decryptPassword,encryptPassword,initDB
 import distutils.util as dsUtil
 import jwt
 import datetime
@@ -127,6 +127,9 @@ def home():
         Crypto.createKey()
         Crypto.createSharedPreferencesFile()
         Crypto.addSharedPreferencesData('isFirstOpen','True')
+
+    if Path("User.db").exists()==False:
+        initDB
     return "<center><h1>Authentication Engine</h1></center><center><p>This site is a prototype API for authentication engines.</p></center>"
 
 
