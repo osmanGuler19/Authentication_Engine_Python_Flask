@@ -1,10 +1,8 @@
 import flask
-from flask_sqlalchemy import SQLAlchemy
 from flask import render_template, request, jsonify, make_response
 import Models.crypto as Crypto
 from pathlib import Path
-from databaseOperations import addUser, getUser, deleteUser, updateUser,checkPassword,getKey
-from cryptography.fernet import Fernet
+from databaseOperations import addUser, getUser, deleteUser, updateUser,checkPassword,getKey,decryptPassword,encryptPassword
 import distutils.util as dsUtil
 import jwt
 import datetime
@@ -53,11 +51,7 @@ def login_user():
      
     if checkPassword(user[1], auth.password):
         updateUser(user[0],user[1],True,user[3],user[4],True)
-        fernet = Fernet(getKey())
-        resultToBinary = user[1].encode('UTF-8')
-        decryptedPassword = fernet.decrypt(resultToBinary)
-        decryptedPasswordToString = decryptedPassword.decode('UTF-8')
-        token = jwt.encode({'email': user[0], 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30), 'password':decryptedPasswordToString}, app.config['SECRET_KEY'],  algorithm="HS256")  
+        token = jwt.encode({'email': user[0], 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30), 'password':decryptPassword(user[1])}, app.config['SECRET_KEY'],  algorithm="HS256")  
         return jsonify({'token' : token})
 
     return make_response('could not verify',  401, {'WWW.Authentication': 'Basic realm: "login required"'})
@@ -90,9 +84,39 @@ def signup_user(current_user):
 def delete_user(current_user):  
     data = request.get_json()  
     user = getUser(data['email'],data['password'])
-    deleteUser(user[0],user[1])
-    return jsonify({'message': 'deleted successfully'})
+    result = deleteUser(user[0],decryptPassword(user[1]))
+    
+    if result=='Deleted':
+        return jsonify({'message': 'deleted successfully'})
+    else:
+        return jsonify({'message': 'deleting error'})
 
+
+@app.route('/getUser', methods=['GET', 'POST'])
+@token_required
+def get_user(current_user):  
+    data = request.get_json()  
+    user = getUser(data['email'],data['password'])
+    if user != 'None':
+        user[1] = decryptPassword(user[1])
+        return jsonify({'email': user[0],'password': user[1], 'authenticated': user[2], 'role': user[3]})
+    else:
+        return jsonify({'message': 'getting error'})
+
+
+@app.route('/updateUser', methods=['GET', 'POST'])
+@token_required
+def update_user(current_user):  
+    data = request.get_json()  
+    user = getUser(data['email'],data['password'])
+    if user != 'None':
+        user[1] = decryptPassword(user[1])
+        updateUser(data['email'],data['password'],data['autheticated'], data['role'], data['deleted'], data['logged'])
+
+
+        return jsonify({'email': user[0],'password': user[1], 'authenticated': user[2], 'role': user[3]})
+    else:
+        return jsonify({'message': 'getting error'})
 
 
 
@@ -122,8 +146,7 @@ def admin_login():
     ##addUser('osman-guler@outlook.com','Kumarbaz19.',False,'admin')
 
     if(user != 'None' and ("".join(user[3])).lower()=='admin'.lower()): #user[3] is role field
-        token = jwt.encode({'email': user[0], 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30),' password':user[1]}, app.config['SECRET_KEY'])  
-        #s = token.encode('UTF-8')
+        token = jwt.encode({'email': user[0], 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=30),' password':decryptPassword(user[1])}, app.config['SECRET_KEY'])  
         return render_template('admin_enterance/admin_logged.html',value= token)
 
     else: return "<center><h1>404</h1><p>The resource could not be found.</p></center>", 404   

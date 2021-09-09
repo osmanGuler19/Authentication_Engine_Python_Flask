@@ -1,7 +1,4 @@
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Boolean, engine,select
-from werkzeug.security import generate_password_hash, check_password_hash
-import Models.usermodel as UserModel
-from logging.config import dictConfig
+from sqlalchemy import create_engine, MetaData, Table, Column, String, Boolean, engine
 from cryptography.fernet import Fernet
 import keyring
 
@@ -44,11 +41,13 @@ def deleteUser(add_email, add_password):
     resultToBinary = user[1].encode('UTF-8')
     decryptedPassword = fernet.decrypt(resultToBinary)
     decryptedPasswordToString = decryptedPassword.decode('UTF-8')
-
     if decryptedPasswordToString == add_password:
-        print('Selaaaam')
+        
         stmt = users.update().where(users.c.email == add_email).values(isDeleted=True)
         engine.connect().execute(stmt)
+        return 'Deleted'
+    else:
+        return 'Error'
 
 def updateUser(add_email, add_password,add_authenticated,add_role, add_isDeleted,add_isLoggedIn):
     s = users.select().where(users.c.email ==add_email)
@@ -61,7 +60,8 @@ def updateUser(add_email, add_password,add_authenticated,add_role, add_isDeleted
     decryptedPasswordToString = decryptedPassword.decode('UTF-8')
     if (decryptedPasswordToString == add_password and user is not None):
         stmt = users.update().where(users.c.email == add_email).values(email = add_email, password = add_password, authenticated = add_authenticated, role= add_role, isDeleted= add_isDeleted,isLoggedIn = add_isLoggedIn)
-        engine.connect().execute(stmt)
+        conn = engine.connect()
+        conn.execute(stmt)
         return 'Updated'
 
     else:

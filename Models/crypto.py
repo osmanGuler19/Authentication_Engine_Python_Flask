@@ -129,16 +129,3 @@ def deleteSharedPreferencesData(key):
     f = open("sharedPreferences.bin","wb")
     f.write(encryptedBinaryData)
     f.close
-
-
-#Yukarıdaki createSharedPreferences fonksiyonu ile aynı şeyi yapıyor aslında
-'''def encryptFile(filename, key):
-    
-    f = Fernet(key)
-    with open(filename, "rb") as file:
-        # read all file data
-        file_data = file.read()
-    
-    encrypted_data = f.encrypt(file_data)
-    with open(filename, "wb") as file:
-        file.write(encrypted_data)'''
