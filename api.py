@@ -7,14 +7,13 @@ import distutils.util as dsUtil
 import jwt
 import datetime
 from functools import wraps
-#from Models.usermodel import db
+
 
 app  = flask.Flask(__name__)
 #app.config["DEBUG"] = True
 app.config['SECRET_KEY'] = 'iTN4wwiLTOwg_yyGCTEEyLKie9L1uwJviJP7avMDFSE'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 app.static_folder = 'static'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
 def token_required(f):
    @wraps(f)
@@ -128,8 +127,9 @@ def home():
         Crypto.createSharedPreferencesFile()
         Crypto.addSharedPreferencesData('isFirstOpen','True')
 
-    if Path("User.db").exists()==False:
-        initDB
+    if Path("User.db").exists() == False:
+        initDB()
+
     return "<center><h1>Authentication Engine</h1></center><center><p>This site is a prototype API for authentication engines.</p></center>"
 
 
@@ -163,6 +163,7 @@ def change_credentials():
     new_password = request.form['login_password']    
     addUser(new_email,new_password,True,'admin')
     Crypto.editSharedPreferencesData('isFirstOpen','False')
+    return "<center><h1>Success</h1><p>Credentails Changed</p> <p>Now you can use postman</p></center>"
 
 
 def shutdown_server():

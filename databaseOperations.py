@@ -15,7 +15,6 @@ users = Table(
     Column('isLoggedIn',Boolean, default=False)
 )
 
-meta.create_all(engine)
 
 
 def createKey():
@@ -32,12 +31,27 @@ def initDB():
     meta.create_all(engine)
     print('Created db')
 
+
+def decryptPassword(password):
+    fernet = Fernet(getKey())
+    resultToBinary = password.encode('UTF-8')
+    decryptedPassword = fernet.decrypt(resultToBinary)
+    decryptedPasswordToString = decryptedPassword.decode('UTF-8')
+    return "".join(decryptedPasswordToString)
+
+def encryptPassword(password):
+    fernet = Fernet(getKey())
+    passwordToBinary = password.encode('UTF-8')
+    enryptedPassword = fernet.encrypt(passwordToBinary)
+    enryptedPasswordToString = enryptedPassword.decode('UTF-8')
+    return "".join(enryptedPasswordToString)
+
 def deleteUser(add_email, add_password):
     s = users.select().where(users.c.email ==add_email)
     res = engine.connect().execute(s)
     u = res.first()
     user = [r for r in u]
-    decryptedPasswordToString = decryptPassword(add_password)
+    decryptedPasswordToString = decryptPassword(user[1])
     if decryptedPasswordToString == add_password and user[3] != 'admin':
         
         stmt = users.update().where(users.c.email == add_email).values(isDeleted=True)
@@ -51,7 +65,7 @@ def updateUser(add_email, add_password,add_authenticated,add_role, add_isDeleted
     res = engine.connect().execute(s)
     u = res.first()
     user = [r for r in u]
-    decryptedPasswordToString = decryptPassword(add_password)
+    decryptedPasswordToString = decryptPassword(user[1])
     if (decryptedPasswordToString == add_password and user is not None):
         stmt = users.update().where(users.c.email == add_email).values(email = add_email, password = add_password, authenticated = add_authenticated, role= add_role, isDeleted= add_isDeleted,isLoggedIn = add_isLoggedIn)
         conn = engine.connect()
@@ -71,7 +85,7 @@ def getUser(add_email,add_password):
         user = [r for r in u]
         if user[1] is not None: 
             
-            decryptedPasswordToString = decryptPassword(add_password)
+            decryptedPasswordToString = decryptPassword(user[1])
             if (decryptedPasswordToString == add_password) :
                 return user
             else:
@@ -89,25 +103,9 @@ def addUser(add_email, add_password,add_authenticated,add_role):
         conn.execute(ins)
     
 def checkPassword(hashedPassword, normalPassword):
-    fernet = Fernet(getKey())
-    passwordToBinary = hashedPassword.encode('UTF-8')
-    decryptedPassword = fernet.decrypt(passwordToBinary)
-    decryptedPasswordToString = decryptedPassword.decode('UTF-8')
+    decryptedPasswordToString = decryptPassword(hashedPassword)
     if decryptedPasswordToString == normalPassword:
         return True
     else:
         return False
 
-def decryptPassword(password):
-    fernet = Fernet(getKey())
-    resultToBinary = password.encode('UTF-8')
-    decryptedPassword = fernet.decrypt(resultToBinary)
-    decryptedPasswordToString = decryptedPassword.decode('UTF-8')
-    return decryptedPasswordToString
-
-def encryptPassword(password):
-    fernet = Fernet(getKey())
-    passwordToBinary = password.encode('UTF-8')
-    enryptedPassword = fernet.encrypt(passwordToBinary)
-    enryptedPasswordToString = enryptedPassword.decode('UTF-8')
-    return enryptedPasswordToString
